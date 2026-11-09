@@ -14,6 +14,7 @@ function PH_LoadTsvFcn(hObject,varargin)
 	%select folder
 	strText = 'Select .tsv file(s)';
 	if ismac; msgbox(strText,'OK');end
+	PH_ConsolePrompt('Select FILE(S)',strText,cd(),'cluster_*.tsv to merge into the clusters (multi-select). MATLAB field names cannot contain ''-''');
 	[cellTsvFiles,strTsvPath] = uigetfile(fullpath(cd(),'*.tsv'),strText,'MultiSelect','on');
 	if isempty(cellTsvFiles) || (~iscell(cellTsvFiles) && cellTsvFiles(1) == 0),return;end
 	if ischar(cellTsvFiles),cellTsvFiles={cellTsvFiles};end

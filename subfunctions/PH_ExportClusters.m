@@ -33,6 +33,7 @@ function PH_ExportClusters(hMain,varargin)
 	%save
 	strName = getDate();
 	strClusterOut = strcat(strName,'_UPF_Cluster.mat');
+	PH_ConsolePrompt('SAVE AS',['cluster export ' strClusterOut],cd(),'This *_UPF_Cluster.mat is what goes back to scratch/<mouse>/<rec>/upf/');
 	[strFile,strPath,boolAccept] = uiputfile(strClusterOut,'Save ephys data as');
 	if ~isempty(strFile) && ~isempty(strPath) && boolAccept ~= 0
 		hMsg=msgbox('Exporting ephys data...','Saving');

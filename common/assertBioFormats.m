@@ -21,6 +21,7 @@ function intOutFlag = assertBioFormats(strPath)
 				,'bioformats API','Yes','No','Never','Yes');
 			if strcmp(strAns,'Yes')
 				if ~exist('strPath','var') || isempty(strPath)
+					PH_ConsolePrompt('Select FOLDER','bioformats MATLAB API (bfmatlab)',cd(),'');
 					strPath = uigetdir('','Please select the folder for the bioformats MATLAB API (bfmatlab)');
 					if isempty(strPath) || strPath(1) == 0 || ~exist(strPath,'dir')
 						%cancel

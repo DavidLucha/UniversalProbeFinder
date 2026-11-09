@@ -62,6 +62,7 @@ function varOut = PF_getIniVar(strVarName,boolSetValue,varValue)
 			end
 			
 			%open path finding dialog
+			PH_ConsolePrompt('Select FOLDER',sprintf('atlas path for %s',strAtlasName),strDefPath,'Allen CCF: the folder holding template_volume_10um.npy, annotation_volume_10um_by_index.npy, structure_tree_safe_2017.csv');
 			varOut = uigetdir(strDefPath,sprintf('Select path for %s',strAtlasName));
 			if isempty(varOut) || varOut(1)==0,return;end
 		else

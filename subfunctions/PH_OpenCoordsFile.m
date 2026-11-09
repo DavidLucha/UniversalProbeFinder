@@ -15,6 +15,7 @@ function [sProbeCoords,strFile,strPath] = PH_OpenCoordsFile(strDefaultPath,strNa
 	catch
 		strOldPath = cd();
 	end
+	PH_ConsolePrompt('Select FILE',strPrompt,cd(),'AP_histology v2: AP_histology_processing.mat (in ap_histology_tiffs). Also: old probe_ccf.mat, SHARP-track, UPF ProbeLocationFile*.mat');
 	[strFile,strPath]=uigetfile('ProbeTracks.mat',strPrompt);
 	cd(strOldPath);
 	if isempty(strFile) || (numel(strFile)==1 && strFile==0)

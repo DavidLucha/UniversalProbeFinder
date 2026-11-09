@@ -5,6 +5,7 @@ function sClusters = PH_OpenEphys(strPath)
 	if ~exist('strPath','var') || isempty(strPath) || strPath(1) == 0
 		strPath = cd();
 	end
+	PH_ConsolePrompt('Select FOLDER','ephys data folder',strPath,'Kilosort: the folder with params.py + spike_times.npy (e.g. ~/Data/probe_recon/<mouse>/<rec>/kilosort)');
 	strEphysPath=uigetdir(strPath,'Select ephys data folder');
 	sClusters = [];
 	if isempty(strEphysPath) || strEphysPath(1) == 0,return;end

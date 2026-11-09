@@ -4,6 +4,7 @@ function [sClusters,boolSuccess] = PH_OpenZeta(sClusters,strPath)
 	boolSuccess = false;
 	strText = 'Select event time, ZETA or Acquipix file';
 	if ismac; msgbox(strText,'OK');end
+	PH_ConsolePrompt('Select FILE',strText,strPath,'');
 	[strZetaFile,strZetaPath] = uigetfile(strPath,strText);
 	if isempty(strZetaFile) || strZetaFile(1) == 0,return;end
 	

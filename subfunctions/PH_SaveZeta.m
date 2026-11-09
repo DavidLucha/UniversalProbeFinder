@@ -6,6 +6,7 @@ function [strZetaFile,strZetaPath] = PH_SaveZeta(vecDepth,vecZetaP,vecClusterId,
 	
 	%ask where to save
 	strOldPath = cd(strPath);
+	PH_ConsolePrompt('SAVE AS','ZETA responsiveness file (zeta_responsiveness.mat)',cd(),'');
 	[strZetaFile,strZetaPath] = uiputfile('zeta_responsiveness.mat','Save ZETA responsiveness file');
 	cd(strOldPath);
 	if isempty(strZetaFile) || strZetaFile(1) == 0,return;end

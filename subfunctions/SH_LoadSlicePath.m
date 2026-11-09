@@ -38,6 +38,7 @@ function sSliceData = SH_LoadSlicePath(strDefaultPath)
 	end
 	
 	%ask what to load
+	PH_ConsolePrompt('Select FOLDER','folder with slice images (SlicePrepper/SliceFinder)',strDefaultPath,'');
 	strSlicePath = uigetdir(strDefaultPath,'Select folder with slice images');
 	if isempty(strSlicePath) || strSlicePath(1) == 0,return;end
 	

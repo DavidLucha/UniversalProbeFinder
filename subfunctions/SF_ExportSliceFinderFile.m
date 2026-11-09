@@ -18,6 +18,7 @@ function SF_ExportSliceFinderFile(hMain,varargin)
 	catch
 		strOldPath = cd();
 	end
+	PH_ConsolePrompt('SAVE AS',['probe tracks ' strDefaultName],cd(),'');
 	[strFile,strPath] = uiputfile('*.mat','Export Tracks',strDefaultName);
 	cd(strOldPath);
 	
