@@ -78,7 +78,10 @@ function sClustTsv = loadClusterTsvs(strFolder,strSearchKey)
 			%check if column is numeric
 			boolIsNumeric = false;
 			cellColData = cellData(:,intCol);
-			cellNumeric=regexp(cellColData,'^\d*[.]?\d*$');
+			%DLH fork: also accept signed numbers, 1e-05 notation and NaN (SpikeInterface/bombcell
+			%TSVs have all three); upstream's '^\d*[.]?\d*$' loaded those columns as text, which
+			%PH_PlotProbeEphys then plots as the rank of each unique string, not the value
+			cellNumeric=regexp(cellColData,'^(([-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?)|[Nn]a[Nn])?$');
 			if ~any(cellfun(@isempty,cellNumeric))
 				cellColData = cellfun(@str2double,cellColData,'uniformoutput',false);
 				boolIsNumeric = true;
