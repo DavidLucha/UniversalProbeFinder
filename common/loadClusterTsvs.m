@@ -82,7 +82,9 @@ function sClustTsv = loadClusterTsvs(strFolder,strSearchKey)
 			%TSVs have all three); upstream's '^\d*[.]?\d*$' loaded those columns as text, which
 			%PH_PlotProbeEphys then plots as the rank of each unique string, not the value
 			cellNumeric=regexp(cellColData,'^(([-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?)|[Nn]a[Nn])?$');
-			if ~any(cellfun(@isempty,cellNumeric))
+			%DLH fork: a blank cell (pandas writes NaN as blank) is a missing number, not text.
+			%MATLAB's regexp never matches '', so test only the non-blank cells; str2double('') = NaN.
+			if ~any(cellfun(@isempty,cellNumeric) & ~cellfun(@isempty,cellColData))
 				cellColData = cellfun(@str2double,cellColData,'uniformoutput',false);
 				boolIsNumeric = true;
 			end
