@@ -100,7 +100,24 @@ function PH_UpdateProbeCoordinates(hMain,vecSphereVector,boolForceYupdate)
 		'Probe length ' num2str(round(probe_vector_bregma(6))) ' microns, ' ...
 		num2str(round(sGUI.step_size*100)) '% step size' ...
 		];
-	set(sGUI.probe_coordinates_text,'String',probe_text);
+	%DLH fork: soft check of the fit against the micromanipulator reading. The shank can't
+	%stretch, so length / nominal length is the atlas-vs-brain scale along the track. With that
+	%scale the tip should sit about scale x insertion depth below the brain entry; what is left
+	%is offset error (zeroing, dimpling, drift, atlas vs real entry point), expected to stay
+	%within a few hundred um. Insertion depth and warning threshold: configPF.ini
+	%(dblInsertDepthUm, dblDepthWarnUm); read once per MATLAB session (clear functions to reload).
+	[dblInsertUm,dblWarnUm] = local_insert_depth();
+	dblScale = probe_vector_bregma(6) / sGUI.sProbeCoords.ProbeLengthMicrons;
+	dblDeltaUm = probe_vector_bregma(5) - dblScale*dblInsertUm;
+	strCheck = sprintf(' | stretch %.3f | tip %+d %sm vs %d%s%.3f', dblScale, round(dblDeltaUm), ...
+		char(181), round(dblInsertUm), char(215), dblScale);
+	vecTextCol = [0 0 0];
+	if abs(dblDeltaUm) > dblWarnUm
+		strCheck = [strCheck ' - CHECK'];
+		vecTextCol = [0.8 0.35 0];
+	end
+	probe_text = [probe_text strCheck];
+	set(sGUI.probe_coordinates_text,'String',probe_text,'ForegroundColor',vecTextCol);
 	
 	% Update the probe areas
 	dblProbeLength = probe_vector_bregma(6);
@@ -111,12 +128,13 @@ function PH_UpdateProbeCoordinates(hMain,vecSphereVector,boolForceYupdate)
 	set(sGUI.handles.probe_areas_plot,'YData',vecLocY,'CData',probe_area_ids(:));
 	%set(sGUI.handles.axes_probe_areas,'YTick',probe_area_centers*dblVoxelSize,'YTickLabels',probe_area_labels);
 	
-	set(sGUI.handles.axes_probe_areas,'YTick',probe_area_boundaries(2:end)*dblVoxelSize,'YTickLabels',probe_area_full);
-	set(sGUI.handles.axes_probe_areas,'YTickLabelRotation',70,'TickLabelInterpreter','none');
+	%DLH fork: labels are drawn by PH_DrawAreaLabels after the YLim update below
+	%set(sGUI.handles.axes_probe_areas,'YTick',probe_area_boundaries(2:end)*dblVoxelSize,'YTickLabels',probe_area_full);
+	%set(sGUI.handles.axes_probe_areas,'YTickLabelRotation',70,'TickLabelInterpreter','none');
 	
 	yyaxis(sGUI.handles.axes_probe_areas2,'right');
 	set(sGUI.handles.probe_areas_plot2,'YData',vecLocY,'CData',probe_area_ids(:));
-	set(sGUI.handles.axes_probe_areas2,'YTick',probe_area_centers*dblVoxelSize,'YTickLabels',probe_area_labels,'TickLabelInterpreter','none');
+	%set(sGUI.handles.axes_probe_areas2,'YTick',probe_area_centers*dblVoxelSize,'YTickLabels',probe_area_labels,'TickLabelInterpreter','none');
 	
 	%save current data
 	sGUI.output.probe_vector = probe_vector_cart;
@@ -147,6 +165,13 @@ function PH_UpdateProbeCoordinates(hMain,vecSphereVector,boolForceYupdate)
 	else
 		boolUpdateYLim = false;
 	end
+	
+	%DLH fork: horizontal, non-overlapping acronyms with leader lines on both area bars
+	%(replaces full names rotated 70deg at the boundaries). Click a label for its full name.
+	vecAreaCentUm = probe_area_centers*dblVoxelSize;
+	vecAreaBoundUm = probe_area_boundaries*dblVoxelSize;
+	PH_DrawAreaLabels(sGUI.handles.axes_probe_areas,vecAreaCentUm,probe_area_labels,probe_area_full,vecAreaBoundUm);
+	PH_DrawAreaLabels(sGUI.handles.axes_probe_areas2,vecAreaCentUm,probe_area_labels,probe_area_full,vecAreaBoundUm);
 	
 	%% plot boundaries
 	%extract boundaries
@@ -183,3 +208,17 @@ function PH_UpdateProbeCoordinates(hMain,vecSphereVector,boolForceYupdate)
 	
 end
 
+function [dblInsertUm,dblWarnUm] = local_insert_depth()
+	%DLH fork: insertion depth along the probe axis (L&N reading) and the |tip offset| above
+	%which the coordinates text turns orange. Defaults 5600 and 300 um if configPF.ini lacks them.
+	persistent dblIns dblWarn
+	if isempty(dblIns)
+		dblIns = 5600; dblWarn = 300;
+		try
+			v = PF_getIniVar('dblInsertDepthUm'); if ischar(v), v = str2double(v); end; if isnumeric(v) && isscalar(v) && v > 0, dblIns = double(v); end
+			v = PF_getIniVar('dblDepthWarnUm'); if ischar(v), v = str2double(v); end; if isnumeric(v) && isscalar(v) && v > 0, dblWarn = double(v); end
+		catch
+		end
+	end
+	dblInsertUm = dblIns; dblWarnUm = dblWarn;
+end

@@ -168,7 +168,9 @@ function hMain = PH_GenGUI(sAtlas,sProbeCoords,sClusters)
 	set(hAxZeta,'Position',[0.6,0.5,0.3,0.4]);
 	set(hAxAreas,'Position',[0.93,0.5,0.02,0.4]);
 	set(hAxClusters,'Position',[0.6,0.065,0.1,0.4]);
-	set(hAxMua,'Position',[0.668,0.065,0.3,0.4]);
+	%DLH fork: was width 0.3 (right edge 0.968), which runs under the area bar at x=0.93 whenever
+	%the window is tall enough that the square MUA plot fills its box's width
+	set(hAxMua,'Position',[0.668,0.065,0.25,0.4]);
 	set(hAxAreas2,'Position',[0.93,0.065,0.02,0.4]);
 	
 	% Set up the text to display coordinates

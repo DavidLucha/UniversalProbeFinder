@@ -1,4 +1,4 @@
-function sClusters = EL_PrepEphys_KS(strPathEphys,dblProbeLength)
+function sClusters = EL_PrepEphys_KS(strPathEphys,dblProbeLength,boolAllTsvs)
 	%EL_PrepEphys_KS Transform kilosort ephys data to ProbeFinder format
 	%   sClusters = EL_PrepEphys_KS(strPathEphys,dblProbeLength)
 	%
@@ -28,7 +28,17 @@ function sClusters = EL_PrepEphys_KS(strPathEphys,dblProbeLength)
 	end
 	
 	%load tsv labels
-	sClustTsv = loadClusterTsvs(strPathEphys);
+	if exist('boolAllTsvs','var') && ~isempty(boolAllTsvs) && boolAllTsvs
+		%DLH fork: every cluster*.tsv in the folder, no selection dialog (UPF_OpenSession)
+		sTsvDir = dir(fullpath(strPathEphys,'cluster*.tsv'));
+		if isempty(sTsvDir)
+			sClustTsv = struct('cluster_id',{});
+		else
+			sClustTsv = loadClusterTsvs(sTsvDir,false);
+		end
+	else
+		sClustTsv = loadClusterTsvs(strPathEphys);
+	end
 	
 	%load data
 	sEphysData = loadKSdir(strPathEphys);

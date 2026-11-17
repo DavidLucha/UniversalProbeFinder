@@ -90,14 +90,18 @@ function sClustTsv = loadClusterTsvs(strFolder,strSearchKey)
 			end
 			
 			%loop through entries
+			%DLH fork: ids looked up in a vector kept in step with sClustTsv (was rebuilt from the
+			%struct for every cell, which made loading ~100 TSVs x ~1000 clusters slow)
+			vecKnownIds = [sClustTsv.cluster_id];
 			for i=1:intEntries
-				intTarget = find([sClustTsv.cluster_id]==vecClustId(i));
+				intTarget = find(vecKnownIds==vecClustId(i),1);
 				if isempty(intTarget)
 					%add new entry
 					warning([mfilename ':NewEntry'],sprintf('Adding cluster_id %d from file %s, which was not present in other tsv file(s)',...
 						vecClustId(i),sTsvs(intTsv).name));
 					intTarget = numel(sClustTsv)+1;
 					sClustTsv(intTarget).cluster_id = vecClustId(i);
+					vecKnownIds(intTarget) = vecClustId(i);
 				end
 				if isempty(cellColData{i})
 					if boolIsNumeric

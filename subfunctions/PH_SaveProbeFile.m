@@ -29,7 +29,16 @@ function PH_SaveProbeFile(hMain,varargin)
 	assignin('base','probe_vector_bregma',probe_vector_bregma)
 	assignin('base','sProbeCoords',sProbeCoords)
 	if ~(sGUI.runtype == 2 && nargin == 1)
-		uisave('sProbeCoords',['ProbeLocationFile' getDate]);
+		strDefName = ['ProbeLocationFile' getDate];
+		strOldPath = cd();
+		if isfield(sGUI,'sSession') && ~isempty(sGUI.sSession)
+			%DLH fork: opened with UPF_OpenSession -> default <rec>/upf/<mouse>_<rec>_probe.mat
+			if ~exist(sGUI.sSession.upfDir,'dir'),mkdir(sGUI.sSession.upfDir);end
+			cd(sGUI.sSession.upfDir);
+			strDefName = sprintf('%s_%s_probe',sGUI.sSession.mouse,sGUI.sSession.rec);
+		end
+		uisave('sProbeCoords',strDefName);
+		cd(strOldPath);
 	end
 	fprintf(['\nCurrent probe location in Paxinos coordinates:\n'...
 		'  ML: %.1f microns\n'...

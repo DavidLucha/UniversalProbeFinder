@@ -1,5 +1,6 @@
-function [sProbeCoords,strFile,strPath] = PH_OpenCoordsFile(strDefaultPath,strName,sAtlas)
+function [sProbeCoords,strFile,strPath] = PH_OpenCoordsFile(strDefaultPath,strName,sAtlas,strFileFull)
 	%open a histology coordinates file and adds the file type to the sProbeCoords field .Type
+	%DLH fork: optional strFileFull (full path) skips the file dialog (used by UPF_OpenSession)
 	
 	%% pre-allocate output
 	sProbeCoords = [];
@@ -10,16 +11,22 @@ function [sProbeCoords,strFile,strPath] = PH_OpenCoordsFile(strDefaultPath,strNa
 	end
 	
 	%% select file
-	try
-		strOldPath = cd(strDefaultPath);
-	catch
-		strOldPath = cd();
-	end
-	PH_ConsolePrompt('Select FILE',strPrompt,cd(),'AP_histology v2: AP_histology_processing.mat (in ap_histology_tiffs). Also: old probe_ccf.mat, SHARP-track, UPF ProbeLocationFile*.mat');
-	[strFile,strPath]=uigetfile('ProbeTracks.mat',strPrompt);
-	cd(strOldPath);
-	if isempty(strFile) || (numel(strFile)==1 && strFile==0)
-		return;
+	if exist('strFileFull','var') && ~isempty(strFileFull)
+		[strPath,strF,strE] = fileparts(strFileFull);
+		strFile = [strF strE];
+		strPath = [strPath filesep];
+	else
+		try
+			strOldPath = cd(strDefaultPath);
+		catch
+			strOldPath = cd();
+		end
+		PH_ConsolePrompt('Select FILE',strPrompt,cd(),'AP_histology v2: AP_histology_processing.mat (in ap_histology_tiffs). Also: old probe_ccf.mat, SHARP-track, UPF ProbeLocationFile*.mat');
+		[strFile,strPath]=uigetfile('ProbeTracks.mat',strPrompt);
+		cd(strOldPath);
+		if isempty(strFile) || (numel(strFile)==1 && strFile==0)
+			return;
+		end
 	end
 	
 	%% load

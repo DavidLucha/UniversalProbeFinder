@@ -1,6 +1,7 @@
-function [sProbeCoords,strFile,strPath] = PH_LoadProbeFile(sAtlas,strPath,strName)
+function [sProbeCoords,strFile,strPath] = PH_LoadProbeFile(sAtlas,strPath,strName,strFileFull,intProbeIdx)
 	%PH_LoadProbeFile Load probe file with file selection window and extract coords
 	%   [sProbeCoords,strFile,strPath] = PH_LoadProbeFile(sAtlas,strPath)
+	%DLH fork: optional strFileFull (no file dialog) and intProbeIdx (no probe dialog), for UPF_OpenSession
 	
 	if ~exist('strPath','var') || isempty(strPath) || strPath(1) == 0
 		strPath = cd();
@@ -10,7 +11,8 @@ function [sProbeCoords,strFile,strPath] = PH_LoadProbeFile(sAtlas,strPath,strNam
 	end
 	
 	%open file
-	[sProbeCoords,strFile,strPath] = PH_OpenCoordsFile(strPath,strName,sAtlas);
+	if ~exist('strFileFull','var'),strFileFull = '';end
+	[sProbeCoords,strFile,strPath] = PH_OpenCoordsFile(strPath,strName,sAtlas,strFileFull);
 	if ~isfield(sProbeCoords,'ProbeLength')
 		%in microns (hardcode, sometimes kilosort2 drops channels)
 		sProbeCoords.ProbeLength = 3840 ./ sAtlas.VoxelSize(end); %in native atlas size
@@ -34,6 +36,12 @@ function [sProbeCoords,strFile,strPath] = PH_LoadProbeFile(sAtlas,strPath,strNam
 		sProbeCoords = PH_ExtractProbeCoords(sProbeCoords);
 		
 		%select probe
+		if exist('intProbeIdx','var') && ~isempty(intProbeIdx)
+			if intProbeIdx > numel(sProbeCoords.cellPoints)
+				error([mfilename ':NoSuchProbe'],'Probe %d requested, but %s has %d probe track(s)',intProbeIdx,strFile,numel(sProbeCoords.cellPoints));
+			end
+			sProbeCoords.intProbeIdx = intProbeIdx;
+		end
 		if ~isfield(sProbeCoords,'intProbeIdx') || isempty(sProbeCoords.intProbeIdx)
 			sProbeCoords.intProbeIdx = PH_SelectProbeNr(sProbeCoords,sAtlas);
 		end

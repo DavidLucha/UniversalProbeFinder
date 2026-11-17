@@ -1,4 +1,4 @@
-function UniversalProbeFinder
+function UniversalProbeFinder(varargin)
 	%The Universal Probe Finder consists of three independent programs:
 	% - SlicePrepper: pre-process your images & annotate traces
 	% - SliceFinder: align each slice to a brain atlas
@@ -51,6 +51,13 @@ function UniversalProbeFinder
 	%
 	%Rev:20240221 - v1.1.0
 	
+	%DLH fork: UniversalProbeFinder 810830 rec1 (or just 810830) opens that recording directly,
+	%with no file dialogs - see UPF_OpenSession
+	if nargin > 0
+		UPF_OpenSession(varargin{:});
+		return;
+	end
+	
 	%ask which program to run
 	
 	%set disable/enable global
@@ -59,7 +66,7 @@ function UniversalProbeFinder
 	
 	%create GUI
 	hChooseGui = figure('WindowStyle','Normal','Name','Universal Probe Finder',...
-		'Menubar','none','NumberTitle','off','Position',[500 500 400 200],'CloseRequestFcn',@UPF_DeleteFcn);
+		'Menubar','none','NumberTitle','off','Position',[500 500 400 300],'CloseRequestFcn',@UPF_DeleteFcn);
 	hChooseGui.Units = 'normalized';
 	
 	%add paths
@@ -86,27 +93,39 @@ function UniversalProbeFinder
 	end
 	
 	%create gui
+	%DLH fork: layout for a 300 px tall window (was 200): the three programs, then a recording list
 	ptrTextPrepper = uicontrol(hChooseGui,'Style','text','String','Select the program you wish to run:',...
-		'Units','normalized','FontSize',12,'Position',[0.1 0.8 0.8 0.15],'backgroundcolor',[1 1 1]);
+		'Units','normalized','FontSize',12,'Position',[0.1 0.87 0.8 0.1],'backgroundcolor',[1 1 1]);
 	
 	ptrButtonPrepper = uicontrol(hChooseGui,'Style','pushbutton','String','Slice Prepper',...
-		'Units','normalized','FontSize',12,'Position',[0.2 0.63 0.6 0.15],...
+		'Units','normalized','FontSize',12,'Position',[0.2 0.75 0.6 0.1],...
 		'Callback',@SlicePrepper);
 	
 	ptrButtonFinder = uicontrol(hChooseGui,'Style','pushbutton','String','Slice Finder',...
-		'Units','normalized','FontSize',12,'Position',[0.2 0.43 0.6 0.15],...
+		'Units','normalized','FontSize',12,'Position',[0.2 0.63 0.6 0.1],...
 		'Callback',@SliceFinder);
 	
 	ptrButtonProber = uicontrol(hChooseGui,'Style','pushbutton','String','Probe Finder',...
-		'Units','normalized','FontSize',12,'Position',[0.2 0.23 0.6 0.15],...
+		'Units','normalized','FontSize',12,'Position',[0.2 0.51 0.6 0.1],...
 		'Callback',@ProbeFinder);
+	
+	%DLH fork: open one recording of the data folder in Probe Finder, no file dialogs
+	ptrTextSession = uicontrol(hChooseGui,'Style','text','String','Or open a recording:',...
+		'Units','normalized','FontSize',11,'Position',[0.05 0.39 0.9 0.07],'backgroundcolor',[1 1 1],...
+		'HorizontalAlignment','left');
+	ptrListSession = uicontrol(hChooseGui,'Style','popupmenu','String',{'(loading...)'},...
+		'Units','normalized','FontSize',11,'Position',[0.05 0.28 0.62 0.1],...
+		'Callback',@local_session_pick);
+	ptrButtonSession = uicontrol(hChooseGui,'Style','pushbutton','String','Open',...
+		'Units','normalized','FontSize',12,'Position',[0.7 0.28 0.25 0.1],...
+		'Callback',@local_session_open);
 	
 	%check for ini file
 	strIni = strcat(SH_getIniPath(),filesep,'configPF.ini');
 	
 	%load ini
 	ptrButtonSetter = uicontrol(hChooseGui,'Style','pushbutton','String','Settings',...
-			'Units','normalized','FontSize',12,'Position',[0.3 0.05 0.4 0.12],...
+			'Units','normalized','FontSize',12,'Position',[0.3 0.05 0.4 0.1],...
 			'Callback',@SetVariablesUPF);
 	if exist(strIni,'file')
 		ptrButtonSetter.Visible = 'on';
@@ -122,7 +141,52 @@ function UniversalProbeFinder
 	sUPF_ChooseGui.handles.ptrButtonFinder = ptrButtonFinder;
 	sUPF_ChooseGui.handles.ptrButtonProber = ptrButtonProber;
 	sUPF_ChooseGui.handles.ptrButtonSetter = ptrButtonSetter;
+	sUPF_ChooseGui.handles.ptrTextSession = ptrTextSession;
+	sUPF_ChooseGui.handles.ptrListSession = ptrListSession;
+	sUPF_ChooseGui.handles.ptrButtonSession = ptrButtonSession;
 	
 	%move
 	movegui(hChooseGui,'center');
+	
+	%fill the recording list (only reads the saved data folder; asks for one only when picked)
+	local_session_fill(ptrListSession,false);
+end
+
+function local_session_fill(ptrList,boolAsk)
+	%DLH fork: list <mouse>/<rec> recordings under the data folder; last entry changes the folder
+	strIni = fullfile(SH_getIniPath(),'configPF.ini');
+	if ~boolAsk && ~(exist(strIni,'file') && contains(fileread(strIni),'SessionRoot='))
+		ptrList.String = {'(choose data folder...)'};
+		ptrList.UserData = struct('mouse',{},'rec',{});
+		ptrList.Value = 1;
+		return;
+	end
+	strRoot = UPF_SessionRoot(boolAsk);
+	sSessions = UPF_ListSessions(strRoot);
+	if isempty(sSessions)
+		ptrList.String = {sprintf('(none under %s)',strRoot),'(choose data folder...)'};
+	else
+		ptrList.String = [{sSessions.label},{'(choose data folder...)'}];
+	end
+	ptrList.UserData = sSessions;
+	ptrList.Value = 1;
+end
+
+function local_session_pick(ptrList,varargin)
+	%picking the last entry changes the data folder and refreshes the list
+	if ptrList.Value == numel(ptrList.String)
+		local_session_fill(ptrList,true);
+	end
+end
+
+function local_session_open(varargin)
+	global sUPF_ChooseGui
+	ptrList = sUPF_ChooseGui.handles.ptrListSession;
+	sSessions = ptrList.UserData;
+	if isempty(sSessions) || ptrList.Value > numel(sSessions)
+		local_session_fill(ptrList,true);
+		return;
+	end
+	s = sSessions(ptrList.Value);
+	UPF_OpenSession(s.mouse,s.rec);
 end
