@@ -38,7 +38,14 @@ function [sProbeCoords,strFile,strPath] = PH_LoadProbeFile(sAtlas,strPath,strNam
 		%select probe
 		if exist('intProbeIdx','var') && ~isempty(intProbeIdx)
 			if intProbeIdx > numel(sProbeCoords.cellPoints)
-				error([mfilename ':NoSuchProbe'],'Probe %d requested, but %s has %d probe track(s)',intProbeIdx,strFile,numel(sProbeCoords.cellPoints));
+				if numel(sProbeCoords.cellPoints) == 1
+					%one track only: assume it was used for every recording, and say so
+					fprintf(2,'[UPF] WARNING: %s has one probe track only; using it for probe/recording %d too\n',strFile,intProbeIdx);
+					sProbeCoords.boolSharedTrack = true;
+					intProbeIdx = 1;
+				else
+					error([mfilename ':NoSuchProbe'],'Probe %d requested, but %s has %d probe track(s)',intProbeIdx,strFile,numel(sProbeCoords.cellPoints));
+				end
 			end
 			sProbeCoords.intProbeIdx = intProbeIdx;
 		end

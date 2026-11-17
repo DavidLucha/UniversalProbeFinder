@@ -12,7 +12,8 @@ function hMain = UPF_OpenSession(strMouse,strRec)
 	%
 	%Starting position (asked when more than one is available):
 	%   Resume    the newest saved probe file in <rec>/upf/ (<mouse>_<rec>_probe.mat or ProbeLocationFile*)
-	%   Autofit   upf_autofit.py's suggestion (<rec>/upf/*probeN_autofit.json): UPF probe depth + length
+	%   Autofit   upf_autofit.py's suggestion (<rec>/upf/<mouse>_<rec>_probe*_autofit.json): UPF probe depth + length
+	%One histology track only: it is used for every recording, with a warning in the console and title.
 	%   Histology the AP_histology track as UPF places it by default
 	%No ZETA / event file is asked for. Save probe file defaults to <rec>/upf/<mouse>_<rec>_probe.mat.
 	%The Allen atlas is loaded once per MATLAB session and reused (clear global gUPF_AtlasCache to reload).
@@ -69,7 +70,9 @@ function hMain = UPF_OpenSession(strMouse,strRec)
 
 	%% starting position: what is available
 	sSaved = [dir(fullfile(strUpfDir,'*_probe.mat')); dir(fullfile(strUpfDir,'ProbeLocationFile*.mat'))];
-	sFit = dir(fullfile(strUpfDir,sprintf('*probe%d_autofit.json',intProbe)));
+	%<mouse>_<rec>_probe*_autofit.json: the probe number in the name is the track used (probe1 when
+	%the histology has one track for both recordings)
+	sFit = dir(fullfile(strUpfDir,sprintf('%s_%s_probe*_autofit.json',strMouse,strRec)));
 	sAph = dir(fullfile(strMouseDir,'histology','**','AP_histology_processing.mat'));
 	cellStarts = {};
 	if ~isempty(sSaved),cellStarts{end+1} = 'Resume saved';end
@@ -132,7 +135,11 @@ function hMain = UPF_OpenSession(strMouse,strRec)
 	sGUI.sSession = struct('mouse',strMouse,'rec',strRec,'root',strRoot,'recDir',strRecDir, ...
 		'ksDir',strKsDir,'upfDir',strUpfDir,'start',strStart);
 	guidata(hMain,sGUI);
-	hMain.Name = sprintf('UPF: Probe Finder - %s %s (start: %s)',strMouse,strRec,strStart);
+	strShared = '';
+	if isfield(sProbeCoords,'boolSharedTrack') && sProbeCoords.boolSharedTrack
+		strShared = ' - ONE TRACK, shared with the other recording(s)';
+	end
+	hMain.Name = sprintf('UPF: Probe Finder - %s %s (start: %s)%s',strMouse,strRec,strStart,strShared);
 
 	%report what UPF actually shows, to compare with the autofit numbers
 	try
@@ -191,10 +198,15 @@ function sProbeCoords = local_apply_autofit(sProbeCoords,sAtlas,sFit,dblVoxel)
 	fprintf('[UPF] autofit %s (%s): depth %.0f um, length %.0f um (stretch %.3f, shift %+.0f um)\n', ...
 		sFit(intNewest).name,datestr(sFit(intNewest).datenum,'dd-mmm HH:MM'), ...
 		sJ.upf_probe_depth_um,sJ.upf_probe_length_um,sJ.stretch,sJ.shift_um);
-	if isfield(sJ,'tip_robust') && ~sJ.tip_robust
+	if ~isfield(sJ,'verdict') && isfield(sJ,'tip_robust') && ~sJ.tip_robust %older json without a verdict
 		fprintf(2,'[UPF] autofit: TIP NOT ROBUST (tip moves %.0f um when the array ends are ignored) - check ZI / internal capsule\n',sJ.tip_disagreement_um);
 	end
-	if isfield(sJ,'stretch_identified') && ~sJ.stretch_identified
+	if isfield(sJ,'verdict') && strcmp(sJ.verdict,'CHECK')
+		fprintf(2,'[UPF] autofit verdict CHECK:\n');
+		cellChecks = cellstr(sJ.checks);
+		for i=1:numel(cellChecks),fprintf(2,'        ! %s\n',cellChecks{i});end
+	end
+	if ~isfield(sJ,'verdict') && isfield(sJ,'stretch_identified') && ~sJ.stretch_identified
 		fprintf(2,'[UPF] autofit: stretch not identified - consider the same-mouse stretch (--fix-stretch)\n');
 	end
 	sInfo = dir(fullfile(sProbeCoords.folder,sProbeCoords.name));
